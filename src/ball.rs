@@ -1,6 +1,7 @@
 use agb::{
     display::object::{OamManaged, Object},
     fixnum::{num, Rect, Vector2D},
+    rng,
 };
 
 use crate::{collidable::Collidable, resources, util::Floating};
@@ -24,9 +25,15 @@ impl<'a> Ball<'a> {
                 (agb::display::WIDTH / 2 - BALL_WIDTH / 2).into(),
                 (agb::display::HEIGHT / 2 - BALL_HEIGHT / 2).into(),
             ),
-            velocity: Vector2D::new(num!(1.0), num!(1.0)),
+            velocity: Vector2D::new(num!(0.0), num!(0.0)),
             sprite,
         }
+    }
+
+    pub fn start(&mut self) {
+        let x = Floating::from(rng::gen()) / Floating::from(i32::MAX);
+        let y = Floating::from(rng::gen()) / Floating::from(i32::MAX);
+        self.velocity = Vector2D::new(x, y).fast_normalise();
     }
 
     pub fn update(&mut self) {
@@ -68,6 +75,18 @@ impl<'a> Ball<'a> {
         }
 
         self.velocity = Vector2D::new(x, y);
+    }
+
+    pub fn out_of_bounds(&self) -> bool {
+        self.pos.y >= agb::display::HEIGHT.into()
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.pos = Vector2D::new(
+            (agb::display::WIDTH / 2 - BALL_WIDTH / 2).into(),
+            (agb::display::HEIGHT / 2 - BALL_HEIGHT / 2).into(),
+        );
+        self.velocity = Vector2D::new(num!(0.0), num!(0.0));
     }
 }
 

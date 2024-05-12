@@ -2,19 +2,24 @@ use alloc::vec::Vec;
 
 use agb::{
     display::object::{OamManaged, Object},
-    fixnum::{Rect, Vector2D},
+    fixnum::{num, Rect, Vector2D},
 };
 
-use crate::{collidable::Collidable, resources};
+use crate::{
+    collidable::Collidable,
+    resources,
+    util::{lerp, Floating},
+};
 
 const PADDLE_HEIGHT: i32 = 16;
 const PADDLE_SEGMENT_WIDTH: i32 = 16;
 
 const PADDLE_MIN_POSITION: i32 = 0;
-const PADDLE_SPEED: i32 = 2;
+
+const PADDLE_SPEED: f32 = 2.0;
 
 pub struct Paddle<'a> {
-    pos_x: i32,
+    pos_x: Floating,
     segments: usize,
     sprites: Vec<Object<'a>>,
 }
@@ -35,7 +40,8 @@ impl<'a> Paddle<'a> {
                 .show();
         }
 
-        let pos_x = agb::display::WIDTH / 2 - (PADDLE_SEGMENT_WIDTH * (segments as i32 + 2) / 2);
+        let pos_x =
+            (agb::display::WIDTH / 2 - (PADDLE_SEGMENT_WIDTH * (segments as i32 + 2) / 2)).into();
 
         Self {
             pos_x,
@@ -49,11 +55,19 @@ impl<'a> Paddle<'a> {
     }
 
     pub fn update(&mut self, input: &agb::input::ButtonController) {
-        self.pos_x =
-            (self.pos_x + (input.x_tri() as i32 * PADDLE_SPEED)).clamp(PADDLE_MIN_POSITION, self.max_position());
+        let direction = input.x_tri() as i32;
+        self.pos_x += lerp(
+            num!(0.0),
+            Floating::from(direction) * Floating::from_f32(PADDLE_SPEED),
+            num!(0.5),
+        );
+        self.pos_x = self
+            .pos_x
+            .clamp(PADDLE_MIN_POSITION.into(), self.max_position().into());
 
+        let trunc_pos = self.pos_x.trunc() as u16;
         for (sprite, i) in self.sprites.iter_mut().zip(0..) {
-            sprite.set_x(((self.pos_x) + (i * PADDLE_SEGMENT_WIDTH)) as u16);
+            sprite.set_x(trunc_pos + ((i * PADDLE_SEGMENT_WIDTH) as u16));
         }
     }
 }
@@ -61,7 +75,7 @@ impl<'a> Paddle<'a> {
 impl<'a> Collidable for Paddle<'a> {
     fn rect(&self) -> Rect<i32> {
         Rect::new(
-            Vector2D::new(self.pos_x, agb::display::HEIGHT - PADDLE_HEIGHT),
+            Vector2D::new(self.pos_x.trunc(), agb::display::HEIGHT - PADDLE_HEIGHT),
             Vector2D::new(
                 PADDLE_SEGMENT_WIDTH * (self.segments as i32 + 2),
                 PADDLE_HEIGHT,
