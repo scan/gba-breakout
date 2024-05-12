@@ -13,6 +13,7 @@ pub struct Ball<'a> {
     pos: Vector2D<Floating>,
     velocity: Vector2D<Floating>,
     sprite: Object<'a>,
+    has_touched: bool,
 }
 
 impl<'a> Ball<'a> {
@@ -27,6 +28,7 @@ impl<'a> Ball<'a> {
             ),
             velocity: Vector2D::new(num!(0.0), num!(0.0)),
             sprite,
+            has_touched: false,
         }
     }
 
@@ -57,24 +59,35 @@ impl<'a> Ball<'a> {
 
     pub fn bounce_object<T: Collidable>(&mut self, other: &T) {
         if !self.collides(other) {
+            self.has_touched = false;
             return;
         }
 
-        let ball_center = self.center();
-        let rect_center = other.center();
-
-        let dx = ball_center.x - rect_center.x;
-        let dy = ball_center.y - rect_center.y;
-
-        let (mut x, mut y) = (self.velocity.x, self.velocity.y);
-
-        if dx.abs() > dy.abs() {
-            x = -x;
-        } else {
-            y = -y;
+        // Only bounce once per collision
+        if self.has_touched {
+            return;
         }
 
-        self.velocity = Vector2D::new(x, y);
+        self.has_touched = true;
+
+        let ball_center = self.center();
+        let rect_center = other.center();
+        let rect_size: Vector2D<Floating> = other.rect().size.into();
+
+        let dist: Vector2D<Floating> = (ball_center - rect_center).into();
+        let (mut x, mut y) = (self.velocity.x, self.velocity.y);
+
+        if dist.x.abs() > dist.y.abs() {
+            let bounce_angle =
+                (dist.y / (rect_size.y / 2)) * num!(0.25) * num!(3.14159265358979323846);
+            x = Floating::cos(bounce_angle);
+        } else {
+            let bounce_angle =
+                (dist.x / (rect_size.x / 2)) * num!(0.25) * num!(3.14159265358979323846);
+            y = Floating::sin(bounce_angle);
+        }
+
+        self.velocity = Vector2D::new(x, y).normalise();
     }
 
     pub fn out_of_bounds(&self) -> bool {
