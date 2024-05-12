@@ -10,6 +10,8 @@ extern crate alloc;
 mod ball;
 mod paddle;
 mod resources;
+mod collidable;
+mod util;
 
 use agb::interrupt::VBlank;
 use ball::Ball;
@@ -26,6 +28,7 @@ pub fn main(mut gba: agb::Gba) -> ! {
     loop {
         paddle.update(&input);
         ball.update();
+        ball.bounce_object(&paddle);
 
         vblank.wait_for_vblank();
         oam.commit();

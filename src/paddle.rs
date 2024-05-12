@@ -5,12 +5,13 @@ use agb::{
     fixnum::{Rect, Vector2D},
 };
 
-use crate::resources;
+use crate::{collidable::Collidable, resources};
 
 const PADDLE_HEIGHT: i32 = 16;
 const PADDLE_SEGMENT_WIDTH: i32 = 16;
 
 const PADDLE_MIN_POSITION: i32 = 0;
+const PADDLE_SPEED: i32 = 2;
 
 pub struct Paddle<'a> {
     pos_x: i32,
@@ -22,9 +23,11 @@ impl<'a> Paddle<'a> {
     pub fn new(oam: &'a OamManaged, segments: usize) -> Self {
         let mut sprites = Vec::with_capacity(segments + 2);
         sprites.push(oam.object_sprite(resources::SPRITE_PADDLE_END.sprite(0)));
-        sprites.push(oam.object_sprite(resources::SPRITE_PADDLE_MID.sprite(0)));
+        for _ in 0..segments {
+            sprites.push(oam.object_sprite(resources::SPRITE_PADDLE_MID.sprite(0)));
+        }
         sprites.push(oam.object_sprite(resources::SPRITE_PADDLE_END.sprite(0)));
-        sprites[2].set_hflip(true);
+        sprites.last_mut().map(|s| s.set_hflip(true));
 
         for sprite in sprites.iter_mut() {
             sprite
@@ -47,14 +50,16 @@ impl<'a> Paddle<'a> {
 
     pub fn update(&mut self, input: &agb::input::ButtonController) {
         self.pos_x =
-            (self.pos_x + (input.x_tri() as i32)).clamp(PADDLE_MIN_POSITION, self.max_position());
+            (self.pos_x + (input.x_tri() as i32 * PADDLE_SPEED)).clamp(PADDLE_MIN_POSITION, self.max_position());
 
         for (sprite, i) in self.sprites.iter_mut().zip(0..) {
             sprite.set_x(((self.pos_x) + (i * PADDLE_SEGMENT_WIDTH)) as u16);
         }
     }
+}
 
-    pub fn get_rect(&self) -> Rect<i32> {
+impl<'a> Collidable for Paddle<'a> {
+    fn rect(&self) -> Rect<i32> {
         Rect::new(
             Vector2D::new(self.pos_x, agb::display::HEIGHT - PADDLE_HEIGHT),
             Vector2D::new(
@@ -62,5 +67,13 @@ impl<'a> Paddle<'a> {
                 PADDLE_HEIGHT,
             ),
         )
+    }
+}
+
+impl<'a> Drop for Paddle<'a> {
+    fn drop(&mut self) {
+        for sprite in self.sprites.iter_mut() {
+            sprite.hide();
+        }
     }
 }

@@ -1,6 +1,5 @@
 use agb::{
-    display::object::{Graphics, Tag},
-    include_aseprite,
+    display::object::{Graphics, Tag}, include_aseprite
 };
 
 const SPRITES: &Graphics = include_aseprite!("gfx/sprites.aseprite");
