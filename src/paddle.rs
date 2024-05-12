@@ -1,19 +1,19 @@
-use agb::display::object::{OamManaged, Object};
 use alloc::vec::Vec;
+
+use agb::{
+    display::object::{OamManaged, Object},
+    fixnum::{Rect, Vector2D},
+};
 
 use crate::resources;
 
-const PADDLE_HEIGHT: u16 = 16;
-const PADDLE_SEGMENT_WIDTH: u16 = 16;
+const PADDLE_HEIGHT: i32 = 16;
+const PADDLE_SEGMENT_WIDTH: i32 = 16;
 
-const PADDLE_MIN_POSITION: u16 = 0;
-
-fn paddle_max_position(paddle_segments: usize) -> u16 {
-    (agb::display::WIDTH as u16) - (PADDLE_SEGMENT_WIDTH * ((paddle_segments as u16) + 2))
-}
+const PADDLE_MIN_POSITION: i32 = 0;
 
 pub struct Paddle<'a> {
-    pos_x: u16,
+    pos_x: i32,
     segments: usize,
     sprites: Vec<Object<'a>>,
 }
@@ -28,12 +28,11 @@ impl<'a> Paddle<'a> {
 
         for sprite in sprites.iter_mut() {
             sprite
-                .set_y(agb::display::HEIGHT as u16 - PADDLE_HEIGHT)
+                .set_y((agb::display::HEIGHT - PADDLE_HEIGHT) as u16)
                 .show();
         }
 
-        let pos_x =
-            agb::display::WIDTH as u16 / 2 - (PADDLE_SEGMENT_WIDTH * (segments as u16 + 2) / 2);
+        let pos_x = agb::display::WIDTH / 2 - (PADDLE_SEGMENT_WIDTH * (segments as i32 + 2) / 2);
 
         Self {
             pos_x,
@@ -42,16 +41,26 @@ impl<'a> Paddle<'a> {
         }
     }
 
-    pub fn update(&mut self, input: &agb::input::ButtonController) {
-        let new_pos_x = (self.pos_x as i32 + (input.x_tri() as i32)).clamp(
-            PADDLE_MIN_POSITION as i32,
-            paddle_max_position(self.segments) as i32,
-        );
+    fn max_position(&self) -> i32 {
+        agb::display::WIDTH - (PADDLE_SEGMENT_WIDTH * ((self.segments as i32) + 2))
+    }
 
-        self.pos_x = new_pos_x as u16;
+    pub fn update(&mut self, input: &agb::input::ButtonController) {
+        self.pos_x =
+            (self.pos_x + (input.x_tri() as i32)).clamp(PADDLE_MIN_POSITION, self.max_position());
 
         for (sprite, i) in self.sprites.iter_mut().zip(0..) {
-            sprite.set_x((self.pos_x) + (i * PADDLE_SEGMENT_WIDTH));
+            sprite.set_x(((self.pos_x) + (i * PADDLE_SEGMENT_WIDTH)) as u16);
         }
+    }
+
+    pub fn get_rect(&self) -> Rect<i32> {
+        Rect::new(
+            Vector2D::new(self.pos_x, agb::display::HEIGHT - PADDLE_HEIGHT),
+            Vector2D::new(
+                PADDLE_SEGMENT_WIDTH * (self.segments as i32 + 2),
+                PADDLE_HEIGHT,
+            ),
+        )
     }
 }

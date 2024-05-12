@@ -7,11 +7,12 @@
 
 extern crate alloc;
 
+mod ball;
 mod paddle;
 mod resources;
 
 use agb::interrupt::VBlank;
-
+use ball::Ball;
 use paddle::Paddle;
 
 pub fn main(mut gba: agb::Gba) -> ! {
@@ -20,9 +21,11 @@ pub fn main(mut gba: agb::Gba) -> ! {
     let oam = gba.display.object.get_managed();
 
     let mut paddle = Paddle::new(&oam, 3);
+    let mut ball = Ball::new(&oam);
 
     loop {
         paddle.update(&input);
+        ball.update();
 
         vblank.wait_for_vblank();
         oam.commit();
