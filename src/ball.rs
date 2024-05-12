@@ -13,7 +13,7 @@ pub struct Ball<'a> {
     pos: Vector2D<Floating>,
     velocity: Vector2D<Floating>,
     sprite: Object<'a>,
-    has_touched: bool,
+    is_touching: bool,
 }
 
 impl<'a> Ball<'a> {
@@ -28,14 +28,14 @@ impl<'a> Ball<'a> {
             ),
             velocity: Vector2D::new(num!(0.0), num!(0.0)),
             sprite,
-            has_touched: false,
+            is_touching: false,
         }
     }
 
     pub fn start(&mut self) {
         let x = Floating::from(rng::gen()) / Floating::from(i32::MAX);
-        let y = Floating::from(rng::gen()) / Floating::from(i32::MAX);
-        self.velocity = Vector2D::new(x, y).fast_normalise();
+        let y = (Floating::from(rng::gen()) / Floating::from(i32::MAX));
+        self.velocity = Vector2D::new(x, y).normalise();
     }
 
     pub fn update(&mut self) {
@@ -59,16 +59,16 @@ impl<'a> Ball<'a> {
 
     pub fn bounce_object<T: Collidable>(&mut self, other: &T) {
         if !self.collides(other) {
-            self.has_touched = false;
+            self.is_touching = false;
             return;
         }
 
         // Only bounce once per collision
-        if self.has_touched {
+        if self.is_touching {
             return;
         }
 
-        self.has_touched = true;
+        self.is_touching = true;
 
         let ball_center = self.center();
         let rect_center = other.center();
@@ -100,6 +100,7 @@ impl<'a> Ball<'a> {
             (agb::display::HEIGHT / 2 - BALL_HEIGHT / 2).into(),
         );
         self.velocity = Vector2D::new(num!(0.0), num!(0.0));
+        self.is_touching = false;
     }
 }
 
